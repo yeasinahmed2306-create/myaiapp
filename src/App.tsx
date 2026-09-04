@@ -121,20 +121,32 @@ export default function App() {
 
   // Load saved sessions from LocalStorage
   useEffect(() => {
-    const saved = localStorage.getItem("socratic_math_sessions");
-    if (saved) {
-      try {
-        setSavedSessions(JSON.parse(saved));
-      } catch (e) {
-        console.error("Error reading saved sessions", e);
+    try {
+      if (typeof window !== "undefined" && window.localStorage) {
+        const saved = window.localStorage.getItem("socratic_math_sessions");
+        if (saved) {
+          try {
+            setSavedSessions(JSON.parse(saved));
+          } catch (e) {
+            console.error("Error reading saved sessions", e);
+          }
+        }
       }
+    } catch (err) {
+      console.warn("Storage access restricted or unavailable:", err);
     }
   }, []);
 
   // Save sessions to LocalStorage on modification
   const saveSessionsToStorage = (updated: SavedSession[]) => {
     setSavedSessions(updated);
-    localStorage.setItem("socratic_math_sessions", JSON.stringify(updated));
+    try {
+      if (typeof window !== "undefined" && window.localStorage) {
+        window.localStorage.setItem("socratic_math_sessions", JSON.stringify(updated));
+      }
+    } catch (err) {
+      console.warn("Storage write restricted or quota exceeded:", err);
+    }
   };
 
   // Handle auto-scroll to bottom of chat
