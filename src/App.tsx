@@ -56,6 +56,33 @@ const PRESET_PROBLEMS: PresetProblem[] = [
   },
 ];
 
+// API Base URL - defaults to relative path in fullstack mode, or uses VITE_BACKEND_URL if set
+const API_BASE = ((import.meta as any).env?.VITE_BACKEND_URL as string | undefined)?.replace(/\/$/, "") || "";
+
+async function sendChatRequest(messages: Array<{ role: string; text?: string; image?: string }>): Promise<TutorResponse> {
+  const response = await fetch(`${API_BASE}/api/chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ messages }),
+  });
+
+  if (!response.ok) {
+    let errorMsg = `Server returned status ${response.status}`;
+    try {
+      const errorData = await response.json();
+      errorMsg = errorData.error || errorMsg;
+    } catch {
+      if (response.status === 404) {
+        errorMsg =
+          "Backend endpoint '/api/chat' returned 404. Note: GitHub Pages is a static file host that does not run the Node.js/Express server. Deploy the server (e.g., to Cloud Run, Render, or Railway) and set VITE_BACKEND_URL.";
+      }
+    }
+    throw new Error(errorMsg);
+  }
+
+  return response.json();
+}
+
 // Encouraging tutor thoughts shown during thinking state
 const TUTOR_THOUGHTS = [
   "Examining the equation's core properties...",
@@ -202,27 +229,14 @@ export default function App() {
     };
 
     try {
-      // API call to Express back-end
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: [
-            {
-              role: "user",
-              text: initialText,
-              image: imagePreview || undefined,
-            },
-          ],
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to communicate with back-end.");
-      }
-
-      const data: TutorResponse = await response.json();
+      // API call to Socratic tutor back-end
+      const data = await sendChatRequest([
+        {
+          role: "user",
+          text: initialText,
+          image: imagePreview || undefined,
+        },
+      ]);
 
       const assistantMsgId = `msg-${Date.now()}-assistant`;
       const assistantMessage: Message = {
@@ -303,18 +317,7 @@ export default function App() {
         image: msg.image,
       }));
 
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: chatPayload }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to submit response.");
-      }
-
-      const data: TutorResponse = await response.json();
+      const data = await sendChatRequest(chatPayload);
 
       const assistantMsgId = `msg-${Date.now()}-assistant`;
       const assistantMsg: Message = {
