@@ -1,0 +1,8 @@
+{
+  "name": "Socratic Math Tutor",
+  "description": "A compassionate, patient, Socratic math tutor that walks you through calculus and algebra problems step-by-step rather than just giving the answers.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
